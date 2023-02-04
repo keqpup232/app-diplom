@@ -19,28 +19,34 @@ node {
     }
 
     stage('Test image') {
-        sh("docker stop nginx${cur_tag}")
-        sh("docker rm nginx${cur_tag}")
-        sh("docker run --name nginx${cur_tag} -d -p 80:80 keqpup232/nginx:${cur_tag}")
+        sh("docker run --name nginx${cur_tag} -d -p 80:80 nginx")
         script {
             final String url = "http://localhost:80/index.html"
             final String code = sh(script: "curl -s -o /dev/null -w '%{http_code}' $url", returnStdout: true).trim()
             echo "HTTP response status code: $code"
             if (code != "200") {
-                echo "Error! status code: $code"
+                sh("docker stop nginx${cur_tag}")
+                sh("docker rm nginx${cur_tag}")
+                error "Error! status code: $code"
             }
         }
+        sh("docker stop nginx${cur_tag}")
+        sh("docker rm nginx${cur_tag}")
     }
 
     stage('Login Push Logout') {
         withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
            sh ("docker login -u=${USERNAME} -p=${PASSWORD}")
+           sh ("docker tag nginx keqpup232/nginx:${cur_tag}")
            sh ("docker push keqpup232/nginx:${cur_tag}")
+           sh ("docker tag nginx keqpup232/nginx:latest")
+           sh ("docker push keqpup232/nginx:latest")
            sh ("docker logout")
         }
     }
 
     stage('Deploy App') {
-          sh 'kubectl apply -f kube_deploy.yml -n prod'
+          sh ("kubectl apply -f kube_deploy.yml -n prod")
     }
+
 }
