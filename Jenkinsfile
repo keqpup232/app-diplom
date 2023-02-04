@@ -44,10 +44,10 @@ node {
            sh ("docker logout")
         }
     }
-
     stage('Deploy App') {
-          sh ("kubectl replace -f kube_deploy.yml -n prod")
           sh ("kubectl apply -f kube_deploy.yml -n prod")
+          sh ("kubectl rollout restart -f kube_deploy.yml -n prod")
+          sh ("kubectl apply -f kube_srv.yml -n prod")
     }
 
 }
