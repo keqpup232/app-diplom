@@ -46,7 +46,7 @@ node {
     }
 
     stage('Deploy App') {
-          sh ("kubectl apply -f kube_deploy.yml -n prod")
+          sh ("kubectl rollout restart -f kube_deploy.yml -n prod")
     }
 
 }
